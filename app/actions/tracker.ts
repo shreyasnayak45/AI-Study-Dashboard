@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { SessionFormData, ActionResult } from "@/types";
 
@@ -27,7 +27,7 @@ export async function createSession(data: SessionFormData): Promise<ActionResult
 
   revalidatePath("/tracker");
   revalidatePath("/");
-  revalidateTag("analytics-stats", {});
+  revalidatePath("/analytics");
   return { success: true };
 }
 
@@ -54,7 +54,7 @@ export async function updateSession(
 
   revalidatePath("/tracker");
   revalidatePath("/");
-  revalidateTag("analytics-stats", {});
+  revalidatePath("/analytics");
   return { success: true };
 }
 
@@ -79,7 +79,7 @@ export async function saveLiveSession(data: {
 
   revalidatePath("/tracker");
   revalidatePath("/");
-  revalidateTag("analytics-stats", {});
+  revalidatePath("/analytics");
   return { success: true };
 }
 
@@ -98,6 +98,6 @@ export async function deleteSession(id: string): Promise<ActionResult> {
 
   revalidatePath("/tracker");
   revalidatePath("/");
-  revalidateTag("analytics-stats", {});
+  revalidatePath("/analytics");
   return { success: true };
 }

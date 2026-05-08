@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult, ExportResult, ProfileFormData, SettingsFormData } from "@/types";
 
@@ -20,7 +20,7 @@ export async function updateProfile(data: ProfileFormData): Promise<ActionResult
 
   if (error) return { success: false, error: error.message };
   revalidatePath("/settings");
-  revalidateTag("profile-settings", {});
+  revalidatePath("/");
   return { success: true };
 }
 
@@ -42,7 +42,6 @@ export async function updateUserSettings(data: SettingsFormData): Promise<Action
 
   if (error) return { success: false, error: error.message };
   revalidatePath("/settings");
-  revalidateTag("profile-settings", {});
   return { success: true };
 }
 
@@ -72,8 +71,6 @@ export async function clearAllSessions(): Promise<ActionResult> {
   revalidatePath("/tracker");
   revalidatePath("/analytics");
   revalidatePath("/settings");
-  revalidateTag("analytics-stats", {});
-  revalidateTag("profile-settings", {});
   return { success: true };
 }
 
