@@ -102,6 +102,31 @@ export async function exportStudyData(): Promise<ExportResult> {
   return { success: true, csv: header + body };
 }
 
+export async function unlinkGoogleAccount(): Promise<ActionResult> {
+  const sb = await createClient();
+  const { data: { user }, error: authErr } = await sb.auth.getUser();
+  if (authErr || !user) return { success: false, error: "Not authenticated" };
+
+  const identities = user.identities ?? [];
+  const googleIdentity = identities.find((i) => i.provider === "google");
+  if (!googleIdentity) return { success: false, error: "No Google account is connected." };
+
+  // Safety: never let a user remove their only sign-in method.
+  const hasEmailIdentity = identities.some((i) => i.provider === "email");
+  if (!hasEmailIdentity) {
+    return {
+      success: false,
+      error: "Add a password to your account before disconnecting Google — it is your only sign-in method.",
+    };
+  }
+
+  const { error } = await sb.auth.unlinkIdentity(googleIdentity);
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/settings");
+  return { success: true };
+}
+
 export async function deleteAccount(): Promise<ActionResult> {
   const sb = await createClient();
   const { data: { user }, error: authErr } = await sb.auth.getUser();

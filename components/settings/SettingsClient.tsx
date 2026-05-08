@@ -3,8 +3,8 @@
 import { useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import {
-  User, Mail, Lock, Bell, Target, Trash2, Download,
-  CheckCircle, XCircle, Eye, EyeOff, Loader2,
+  User, Mail, Bell, Target, Trash2, Download,
+  CheckCircle, XCircle, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -18,9 +18,10 @@ const DeleteAccountModal = dynamic(
   { ssr: false }
 );
 import {
-  updateProfile, updateUserSettings, changePassword,
+  updateProfile, updateUserSettings,
   clearAllSessions, exportStudyData,
 } from "@/app/actions/settings";
+import { AuthConnectionsSection } from "@/components/settings/AuthConnectionsSection";
 import { fmtHours } from "@/lib/analytics-utils";
 import { cn } from "@/lib/utils";
 import type { User as UserType, UserProfile, UserSettings } from "@/types";
@@ -130,31 +131,6 @@ export function SettingsClient({ user, profile, settings }: Props) {
       setPrefsStatus(r.success
         ? { ok: true,  text: "Preferences saved." }
         : { ok: false, text: r.error ?? "Save failed" });
-    });
-  }
-
-  // ── Security ─────────────────────────────────────────────────────
-  const [newPw,      setNewPw]      = useState("");
-  const [confirmPw,  setConfirmPw]  = useState("");
-  const [showPw,     setShowPw]     = useState(false);
-  const [pwStatus,   setPwStatus]   = useState<Status | null>(null);
-  const [pwPending,  startPw]       = useTransition();
-
-  function handleChangePassword(e: React.FormEvent) {
-    e.preventDefault();
-    if (newPw !== confirmPw) {
-      setPwStatus({ ok: false, text: "Passwords do not match" });
-      return;
-    }
-    setPwStatus(null);
-    startPw(async () => {
-      const r = await changePassword(newPw);
-      if (r.success) {
-        setNewPw(""); setConfirmPw("");
-        setPwStatus({ ok: true, text: "Password updated successfully." });
-      } else {
-        setPwStatus({ ok: false, text: r.error ?? "Update failed" });
-      }
     });
   }
 
@@ -348,50 +324,8 @@ export function SettingsClient({ user, profile, settings }: Props) {
           </Card>
         </section>
 
-        {/* ── Security ────────────────────────────────────────────── */}
-        <section>
-          <SectionTitle>Security</SectionTitle>
-          <Card className="p-6">
-            <form onSubmit={handleChangePassword} className="space-y-4">
-              <p className="text-sm text-white/50">
-                Change your password. You&apos;re signed in as <strong className="text-white/70">{email}</strong>.
-              </p>
-
-              <div className="relative">
-                <Input
-                  label="New password"
-                  type={showPw ? "text" : "password"}
-                  placeholder="Min. 8 characters"
-                  icon={<Lock className="h-4 w-4" />}
-                  value={newPw}
-                  onChange={(e) => setNewPw(e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw((v) => !v)}
-                  className="absolute right-3 top-[2.2rem] text-white/30 hover:text-white/60"
-                >
-                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-
-              <Input
-                label="Confirm new password"
-                type={showPw ? "text" : "password"}
-                placeholder="Repeat new password"
-                icon={<Lock className="h-4 w-4" />}
-                value={confirmPw}
-                onChange={(e) => setConfirmPw(e.target.value)}
-              />
-
-              <StatusMsg status={pwStatus} />
-
-              <Button type="submit" loading={pwPending} disabled={!newPw || !confirmPw}>
-                Update password
-              </Button>
-            </form>
-          </Card>
-        </section>
+        {/* ── Password Login + Connected Accounts ─────────────────── */}
+        <AuthConnectionsSection user={user} />
 
         {/* ── Danger zone ─────────────────────────────────────────── */}
         <section>
