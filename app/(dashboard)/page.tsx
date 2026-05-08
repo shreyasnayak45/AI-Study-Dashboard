@@ -9,6 +9,7 @@ import { SubjectBadge } from "@/components/tracker/SubjectBadge";
 import { PriorityBadge } from "@/components/tasks/PriorityBadge";
 import { MiniWeeklyChart } from "@/components/analytics/MiniWeeklyChart";
 import { InsightsCard } from "@/components/ai/InsightsCard";
+import { LiveLogButton } from "@/components/tracker/LiveLogButton";
 import { formatDueDate, dueDateStyle } from "@/lib/task-utils";
 import {
   Clock, BookOpen, Flame, CheckSquare,
@@ -38,15 +39,18 @@ export default async function DashboardPage() {
     <div className="p-4 sm:p-6 lg:p-8">
 
       {/* ── Welcome ───────────────────────────────────────────────── */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-          {greeting}, {firstName} 👋
-        </h1>
-        <p className="mt-1.5 text-sm text-white/40">
-          {trackerStats.totalSessions === 0 && taskStats.total === 0
-            ? "Your dashboard is ready — log a session or add a task to get started."
-            : buildSubtitle(trackerStats.totalSessions, weekHours, taskStats.active, taskStats.overdue)}
-        </p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            {greeting}, {firstName} 👋
+          </h1>
+          <p className="mt-1.5 text-sm text-white/40">
+            {trackerStats.totalSessions === 0 && taskStats.total === 0
+              ? "Your dashboard is ready — log a session or add a task to get started."
+              : buildSubtitle(trackerStats.totalSessions, weekHours, taskStats.active, taskStats.overdue)}
+          </p>
+        </div>
+        <LiveLogButton />
       </div>
 
       {/* ── Stat cards ────────────────────────────────────────────── */}
