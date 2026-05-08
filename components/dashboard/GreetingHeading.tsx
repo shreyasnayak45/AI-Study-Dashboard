@@ -26,18 +26,18 @@
  * Time bands (local hour — new Date().getHours()):
  *   5  – 11  → Good morning
  *   12 – 16  → Good afternoon
- *   17 – 20  → Good evening
- *   21 – 4   → Good night
+ *   17 – 23  → Good evening
+ *   0  – 4   → Welcome back
  */
 
 import { useEffect, useState } from "react";
 
 function getGreeting(): string {
   const h = new Date().getHours();
-  if (h >= 5  && h < 12) return "Good morning";
-  if (h >= 12 && h < 17) return "Good afternoon";
-  if (h >= 17 && h < 21) return "Good evening";
-  return "Good night"; // 21 – 4
+  if (h >= 5  && h < 12) return "Good morning";   //  5:00 – 11:59
+  if (h >= 12 && h < 17) return "Good afternoon"; // 12:00 – 16:59
+  if (h >= 17)            return "Good evening";   // 17:00 – 23:59
+  return "Welcome back";                           //  0:00 –  4:59
 }
 
 interface GreetingHeadingProps {
