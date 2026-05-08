@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import dynamic from "next/dynamic";
 import {
   User, Mail, Lock, Bell, Target, Trash2, Download,
   CheckCircle, XCircle, Eye, EyeOff, Loader2,
@@ -9,8 +9,14 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
-import { DeleteAccountModal } from "./DeleteAccountModal";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
+
+// Lazy-loaded: only downloaded when the user clicks "Delete my account".
+// Keeps framer-motion out of the initial settings page JS bundle.
+const DeleteAccountModal = dynamic(
+  () => import("./DeleteAccountModal").then((m) => ({ default: m.DeleteAccountModal })),
+  { ssr: false }
+);
 import {
   updateProfile, updateUserSettings, changePassword,
   clearAllSessions, exportStudyData,
@@ -55,31 +61,23 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 }
 
 // ─── Status message ───────────────────────────────────────────────────────────
+// Pure CSS — no framer-motion needed for a simple show/hide with fade-in.
 
 function StatusMsg({ status }: { status: Status | null }) {
+  if (!status) return null;
   return (
-    <AnimatePresence>
-      {status && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-          className="overflow-hidden"
-        >
-          <div className={cn(
-            "mt-3 flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-medium",
-            status.ok
-              ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-              : "border border-red-500/20 bg-red-500/10 text-red-400"
-          )}>
-            {status.ok
-              ? <CheckCircle className="h-3.5 w-3.5 shrink-0" />
-              : <XCircle    className="h-3.5 w-3.5 shrink-0" />}
-            {status.text}
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div className={cn(
+      "mt-3 flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-medium",
+      "[animation:status-fade-in_0.18s_ease-out]",
+      status.ok
+        ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+        : "border border-red-500/20 bg-red-500/10 text-red-400"
+    )}>
+      {status.ok
+        ? <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+        : <XCircle    className="h-3.5 w-3.5 shrink-0" />}
+      {status.text}
+    </div>
   );
 }
 

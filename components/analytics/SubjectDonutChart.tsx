@@ -20,7 +20,7 @@ function CustomTooltip({
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#0d0d14]/95 px-3 py-2 text-xs shadow-xl backdrop-blur-sm">
+    <div className="rounded-xl border border-white/[0.08] bg-[#0d0d14] px-3 py-2 text-xs shadow-xl">
       <p className="font-semibold text-white">{d.subject}</p>
       <p className="mt-0.5 text-white/50">{fmtHours(d.minutes)} · {d.percentage}%</p>
       <p className="text-white/35">{d.sessions} session{d.sessions !== 1 ? "s" : ""}</p>

@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth";
 import { getProfileAndSettings } from "@/lib/settings-stats";
 import { SettingsClient } from "@/components/settings/SettingsClient";
 
 export default async function SettingsPage() {
-  const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
+  // getCurrentUser() is React.cache'd — reuses the auth call already made by
+  // the dashboard layout, so this page adds ZERO extra Supabase round-trips.
+  const user = await getCurrentUser();
   if (!user) redirect("/login");
 
   const { profile, settings } = await getProfileAndSettings();

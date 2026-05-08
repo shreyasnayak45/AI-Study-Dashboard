@@ -22,7 +22,7 @@ function CustomTooltip({
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#0d0d14]/95 px-3 py-2 text-xs shadow-xl backdrop-blur-sm">
+    <div className="rounded-xl border border-white/[0.08] bg-[#0d0d14] px-3 py-2 text-xs shadow-xl">
       <p className="mb-1 text-white/50">Week of {d.label}</p>
       <p className="font-semibold text-white">
         {d.hours > 0 ? `${d.hours}h` : "No study"}

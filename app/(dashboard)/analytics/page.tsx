@@ -1,5 +1,6 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { Suspense } from "react";
 import { getAnalyticsStats } from "@/lib/analytics-stats";
 import { generateInsights, fmtHours } from "@/lib/analytics-utils";
 import { getCachedInsight } from "@/lib/ai-insights";
@@ -28,13 +29,33 @@ const SubjectDonutChart = dynamic(
   { loading: () => <ChartCardSkeleton height={300} /> }
 );
 
+// ─── Async server component — streamed via Suspense ───────────────────────────
+// Fetches the AI insight independently so charts + stats render immediately
+// from the unstable_cache while this resolves in parallel.
+async function AIAnalyticsSection() {
+  const initialInsight = await getCachedInsight();
+  return <AnalyticsInsights initialInsight={initialInsight} />;
+}
+
+function AIInsightsSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="h-3 w-3/4 animate-pulse rounded-full bg-white/[0.06]" />
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-[84px] animate-pulse rounded-xl bg-white/[0.03]" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default async function AnalyticsPage() {
   const aiEnabled = isAIEnabled();
 
-  const [stats, initialInsight] = await Promise.all([
-    getAnalyticsStats(),
-    aiEnabled ? getCachedInsight() : Promise.resolve(null),
-  ]);
+  // Only await stats — AI insight streams separately via Suspense below.
+  // On second+ visits, unstable_cache returns stats in <5 ms.
+  const stats   = await getAnalyticsStats();
   const insights = generateInsights(stats);
 
   const totalHours   = (stats.totalMinutes / 60).toFixed(1).replace(/\.0$/, "");
@@ -124,10 +145,12 @@ export default async function AnalyticsPage() {
             <InsightsSection insights={insights} />
           )}
 
-          {/* ── AI Analysis ──────────────────────────────────────────── */}
+          {/* ── AI Analysis — streams in independently via Suspense ───── */}
           {aiEnabled && (
             <div className="mt-8">
-              <AnalyticsInsights initialInsight={initialInsight} />
+              <Suspense fallback={<AIInsightsSkeleton />}>
+                <AIAnalyticsSection />
+              </Suspense>
             </div>
           )}
         </>
