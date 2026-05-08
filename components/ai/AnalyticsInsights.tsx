@@ -72,7 +72,7 @@ export function AnalyticsInsights({ initialInsight }: AnalyticsInsightsProps) {
       <AnimatePresence mode="wait">
 
         {/* Loading skeleton */}
-        {isPending && !insight && (
+        {!insight && (isPending || !error) && (
           <motion.div
             key="skeleton"
             initial={{ opacity: 0 }}

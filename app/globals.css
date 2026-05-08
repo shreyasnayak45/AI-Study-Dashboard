@@ -41,3 +41,28 @@ body {
 ::-webkit-scrollbar-track    { background: transparent; }
 ::-webkit-scrollbar-thumb    { background: rgba(255,255,255,0.1); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ─── Touch & scroll optimizations ─────────────────────────────── */
+
+/* Eliminate the 300 ms click delay on touch devices for all
+   interactive elements — makes buttons and links feel instant.      */
+button, a, [role="button"] { touch-action: manipulation; }
+
+/* Prevent iOS rubber-band overscroll from propagating out of the
+   main scroll container, which avoids layout repaints at the
+   top/bottom bounce boundary.                                       */
+main { overscroll-behavior-y: contain; }
+
+/* ─── LiveLogButton glow animations (CSS, not JS-driven) ────────── */
+
+/* Idle — slow breathing glow when no session is active              */
+@keyframes glow-idle {
+  0%, 100% { box-shadow: 0 0 8px  rgba(239, 68, 68, 0.10); }
+  50%       { box-shadow: 0 0 18px rgba(239, 68, 68, 0.26); }
+}
+
+/* Active — faster, more vivid glow while recording                  */
+@keyframes glow-active {
+  0%, 100% { box-shadow: 0 0 14px rgba(239, 68, 68, 0.28); }
+  50%       { box-shadow: 0 0 30px rgba(239, 68, 68, 0.52); }
+}

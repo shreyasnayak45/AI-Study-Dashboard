@@ -1,3 +1,6 @@
+"use client";
+
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 
 // Each subject gets a deterministic color based on a simple hash of its name.
@@ -22,7 +25,7 @@ export function subjectPalette(subject: string) {
   return PALETTES[Math.abs(hash)];
 }
 
-export function SubjectBadge({ subject }: { subject: string }) {
+export const SubjectBadge = memo(function SubjectBadge({ subject }: { subject: string }) {
   const p = subjectPalette(subject);
   return (
     <span
@@ -36,4 +39,4 @@ export function SubjectBadge({ subject }: { subject: string }) {
       {subject}
     </span>
   );
-}
+});

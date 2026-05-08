@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { isOverdue } from "@/lib/task-utils";
 import type { Task } from "@/types";
@@ -46,7 +47,7 @@ const TABS: TabDef[] = [
   },
 ];
 
-export function TaskFilters({ tasks, active, onChange }: TaskFiltersProps) {
+export const TaskFilters = memo(function TaskFilters({ tasks, active, onChange }: TaskFiltersProps) {
   return (
     <div className="flex items-center gap-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1">
       {TABS.map((tab) => {
@@ -77,7 +78,7 @@ export function TaskFilters({ tasks, active, onChange }: TaskFiltersProps) {
       })}
     </div>
   );
-}
+});
 
 /** Apply a FilterKey to a task array. */
 export function applyFilter(tasks: Task[], filter: FilterKey): Task[] {

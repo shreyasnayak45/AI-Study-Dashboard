@@ -76,7 +76,7 @@ export function InsightsCard({ initialInsight }: InsightsCardProps) {
         <AnimatePresence mode="wait">
 
           {/* Loading skeleton */}
-          {isPending && !insight && (
+          {!insight && (isPending || !error) && (
             <motion.div
               key="skeleton"
               initial={{ opacity: 0 }}

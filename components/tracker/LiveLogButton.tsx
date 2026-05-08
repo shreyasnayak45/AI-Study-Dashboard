@@ -44,18 +44,10 @@ export function LiveLogButton() {
     return (
       <motion.button
         onClick={() => router.push("/tracker")}
-        animate={{
-          boxShadow: [
-            "0 0 14px rgba(239,68,68,0.28)",
-            "0 0 30px rgba(239,68,68,0.52)",
-            "0 0 14px rgba(239,68,68,0.28)",
-          ],
-        }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.97 }}
         title={`Recording: ${session.subject} — click to view tracker`}
-        className="inline-flex items-center gap-2 rounded-xl border border-red-500/40 bg-gradient-to-r from-red-600 to-red-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:from-red-500 hover:to-red-600"
+        className="inline-flex items-center gap-2 rounded-xl border border-red-500/40 bg-gradient-to-r from-red-600 to-red-700 px-4 py-2.5 text-sm font-semibold text-white transition-[colors,box-shadow] hover:from-red-500 hover:to-red-600 hover:shadow-[0_0_36px_rgba(239,68,68,0.60)] [animation:glow-active_2s_ease-in-out_infinite]"
       >
         {/* Live pulsing dot */}
         <span className="relative flex h-2 w-2 shrink-0">
@@ -77,20 +69,9 @@ export function LiveLogButton() {
     <>
       <motion.button
         onClick={() => setPanelOpen(true)}
-        animate={{
-          boxShadow: [
-            "0 0 8px rgba(239,68,68,0.10)",
-            "0 0 18px rgba(239,68,68,0.26)",
-            "0 0 8px rgba(239,68,68,0.10)",
-          ],
-        }}
-        transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-        whileHover={{
-          scale: 1.03,
-          boxShadow: "0 0 22px rgba(239,68,68,0.38)",
-        }}
+        whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.97 }}
-        className="inline-flex items-center gap-2 rounded-xl border border-red-500/25 bg-gradient-to-r from-red-600/80 to-red-700/70 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:from-red-600/90 hover:to-red-700/80"
+        className="inline-flex items-center gap-2 rounded-xl border border-red-500/25 bg-gradient-to-r from-red-600/80 to-red-700/70 px-4 py-2.5 text-sm font-semibold text-white transition-[colors,box-shadow] hover:from-red-600/90 hover:to-red-700/80 hover:shadow-[0_0_22px_rgba(239,68,68,0.38)] [animation:glow-idle_3.5s_ease-in-out_infinite]"
       >
         <Radio className="h-4 w-4" />
         Live Log

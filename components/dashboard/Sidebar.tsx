@@ -71,7 +71,7 @@ export function Sidebar({ user, profile }: SidebarProps) {
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex h-screen w-72 shrink-0 flex-col",
           "border-r border-white/[0.06] bg-surface-800/95 backdrop-blur-xl",
-          "transition-transform duration-300 ease-in-out",
+          "will-change-transform transition-transform duration-300 ease-in-out",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
           // Desktop: static in the normal flow, always visible
           "lg:relative lg:w-60 lg:translate-x-0 lg:bg-surface-800/80"
