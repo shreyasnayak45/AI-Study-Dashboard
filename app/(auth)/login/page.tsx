@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, GraduationCap, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { GoogleOAuthButton } from "@/components/auth/GoogleOAuthButton";
 
 function mapAuthError(message: string): string {
   if (message.includes("Invalid login credentials")) return "Incorrect email or password.";
@@ -16,11 +17,15 @@ function mapAuthError(message: string): string {
   return message;
 }
 
-export default function LoginPage() {
+// Separated into its own component because useSearchParams() requires a
+// Suspense boundary in Next.js 15 App Router.
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  // Pre-fill error from OAuth callback redirect (e.g. ?error=OAuth+sign-in+failed)
+  const [error, setError] = useState(() => searchParams.get("error") ?? "");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -100,6 +105,15 @@ export default function LoginPage() {
           </Button>
         </form>
 
+        {/* Divider */}
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-white/[0.07]" />
+          <span className="text-xs text-white/30 select-none">or continue with</span>
+          <div className="h-px flex-1 bg-white/[0.07]" />
+        </div>
+
+        <GoogleOAuthButton onError={setError} />
+
         <p className="mt-6 text-center text-sm text-white/40">
           Don&apos;t have an account?{" "}
           <Link href="/signup" className="font-medium text-brand-400 hover:text-brand-300 transition-colors">
@@ -108,5 +122,13 @@ export default function LoginPage() {
         </p>
       </div>
     </motion.div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   );
 }

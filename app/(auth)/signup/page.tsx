@@ -8,6 +8,7 @@ import { Mail, Lock, User, GraduationCap, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { GoogleOAuthButton } from "@/components/auth/GoogleOAuthButton";
 
 interface FormData {
   name: string;
@@ -35,6 +36,7 @@ export default function SignupPage() {
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState("");
+  const [oauthError, setOauthError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -168,6 +170,33 @@ export default function SignupPage() {
             Create account <ArrowRight className="h-4 w-4" />
           </Button>
         </form>
+
+        {/* Divider */}
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-white/[0.07]" />
+          <span className="text-xs text-white/30 select-none">or continue with</span>
+          <div className="h-px flex-1 bg-white/[0.07]" />
+        </div>
+
+        <GoogleOAuthButton
+          label="Sign up with Google"
+          onError={setOauthError}
+        />
+
+        <AnimatePresence>
+          {oauthError && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                {oauthError}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <p className="mt-6 text-center text-sm text-white/40">
           Already have an account?{" "}

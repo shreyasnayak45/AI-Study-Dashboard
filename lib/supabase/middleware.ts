@@ -44,12 +44,15 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isAuthPage = pathname === "/login" || pathname === "/signup";
+  // /auth/callback must be reachable without a session — it IS the handler
+  // that creates the session after an OAuth redirect.
+  const isOAuthCallback = pathname.startsWith("/auth/");
   const isPublicAsset =
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
     pathname.match(/\.(.*)$/); // files with extensions (images, fonts…)
 
-  if (!isPublicAsset && !user && !isAuthPage) {
+  if (!isPublicAsset && !user && !isAuthPage && !isOAuthCallback) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     return NextResponse.redirect(redirectUrl);
