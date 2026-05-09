@@ -83,8 +83,13 @@ export const SessionCard = memo(function SessionCard({ session, onEdit }: Sessio
           ? { duration: 0.6, ease: "linear" }
           : { duration: 0.12, ease: "easeOut" },
       }}
-      // Touch handlers only wired on touch devices — zero effect on desktop
-      {...(isTouch ? lpHandlers : {})}
+      // Touch handlers only wired on touch devices, and only when the mobile
+      // action bar is closed. When mobileOpen/confirmDelete is true the action
+      // bar buttons are visible — we must NOT let their touchstart events bubble
+      // up here and restart the 600ms timer (which would re-open the bar after
+      // the user taps Edit/Cancel). Disabling the handlers entirely is the
+      // cleanest guard; individual buttons also stopPropagation as a second layer.
+      {...(isTouch && !mobileOpen && !confirmDelete ? lpHandlers : {})}
       className={`group relative select-none overflow-hidden rounded-2xl border p-5 transition-colors ${
         mobileOpen
           ? "border-brand-500/30 bg-brand-500/[0.06]"
@@ -157,22 +162,37 @@ export const SessionCard = memo(function SessionCard({ session, onEdit }: Sessio
             transition={{ duration: 0.14, ease: "easeOut" }}
             className="mt-3.5 flex items-center gap-2 border-t border-white/[0.06] pt-3.5"
           >
+            {/*
+              Each button stops touchstart propagation (secondary guard against
+              re-triggering the long-press timer) and uses onClick instead of
+              onTouchEnd — onClick is fired by the browser after touchend and
+              avoids the asymmetric stopPropagation that was leaving the 600ms
+              timer running and re-opening the action bar.
+              touch-action: manipulation removes the 300ms click delay on older
+              mobile browsers without disabling scroll.
+            */}
             <button
-              onTouchEnd={(e) => { e.stopPropagation(); handleEdit(); }}
+              onTouchStart={(e) => e.stopPropagation()}
+              onClick={handleEdit}
+              style={{ touchAction: "manipulation" }}
               className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/[0.10] bg-white/[0.05] py-2.5 text-xs font-medium text-white/60 active:bg-white/[0.10]"
             >
               <Pencil className="h-3.5 w-3.5" />
               Edit
             </button>
             <button
-              onTouchEnd={(e) => { e.stopPropagation(); handleDeleteRequest(); }}
+              onTouchStart={(e) => e.stopPropagation()}
+              onClick={handleDeleteRequest}
+              style={{ touchAction: "manipulation" }}
               className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-red-500/25 bg-red-500/10 py-2.5 text-xs font-medium text-red-400 active:bg-red-500/20"
             >
               <Trash2 className="h-3.5 w-3.5" />
               Delete
             </button>
             <button
-              onTouchEnd={(e) => { e.stopPropagation(); setMobileOpen(false); }}
+              onTouchStart={(e) => e.stopPropagation()}
+              onClick={() => setMobileOpen(false)}
+              style={{ touchAction: "manipulation" }}
               className="flex items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02] p-2.5 text-white/30 active:bg-white/[0.06]"
               aria-label="Dismiss"
             >
