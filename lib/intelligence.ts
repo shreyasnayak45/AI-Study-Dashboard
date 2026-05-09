@@ -17,6 +17,7 @@ import type {
   ConsistencyScore, BurnoutRisk, BurnoutSignal, BurnoutLevel,
   HourData, BestStudyHours, FocusPersonality, WeeklyReport,
   IntelligenceData, IntelligencePhase, RawSessionForIntelligence,
+  AIIntelligenceInsight,
 } from "@/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -34,6 +35,22 @@ import type {
  * Exported so ai-insights.ts uses the same value.
  */
 export const MIN_TIMED_SESSIONS = 5;
+
+/** Bump whenever cached AI intelligence shape/safety semantics change. */
+export const INTELLIGENCE_VERSION = 2;
+
+export const TIMING_UNKNOWN_PERSONALITY: AIIntelligenceInsight["personality"] = {
+  type:    "Focus Patterns Unknown",
+  emoji:   "🕐",
+  tagline: "Learning Your Study Rhythm",
+  insight: "Use the live timer during study sessions to unlock personalized focus insights and timing analysis.",
+};
+
+export function hasRealSessionStartTime(s: RawSessionForIntelligence): boolean {
+  return typeof s.session_start_time === "string" &&
+    s.session_start_time.trim().length > 0 &&
+    !Number.isNaN(Date.parse(s.session_start_time));
+}
 
 // ─── Phase computation (exported for use in ai-insights.ts) ──────────────────
 
@@ -165,7 +182,7 @@ function computeBurnoutRisk(
 
   // 2. Late-night study (hour ≥ 22) in the last 7 days.
   //    ONLY use session_start_time — studied_at is noon for manual sessions.
-  const timedRecent7 = recent7.filter((s) => s.session_start_time != null);
+  const timedRecent7 = recent7.filter(hasRealSessionStartTime);
   if (timedRecent7.some((s) => new Date(s.session_start_time!).getHours() >= 22)) {
     signals.push({
       label: "Late-night sessions",
@@ -233,7 +250,7 @@ function computeBurnoutRisk(
 
 function computeBestStudyHours(sessions: RawSessionForIntelligence[]): BestStudyHours {
   // Only sessions with a real start time feed the heatmap.
-  const timedSessions = sessions.filter((s) => s.session_start_time != null);
+  const timedSessions = sessions.filter(hasRealSessionStartTime);
   const timingDataCount = timedSessions.length;
   const hasEnoughTimingData = timingDataCount >= MIN_TIMED_SESSIONS;
 

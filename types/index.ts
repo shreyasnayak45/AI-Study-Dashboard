@@ -180,7 +180,8 @@ export interface AIInsightContent {
   intelligence?: AIIntelligenceInsight;  // added by the intelligence analysis pass
   /** Stored alongside content so we can detect staleness without a separate column. */
   metadata?: {
-    sessionCount: number;  // total sessions at generation time
+    sessionCount?: number; // total sessions at generation time
+    intelligence_version?: number; // cache safety version for AI intelligence payloads
   };
 }
 

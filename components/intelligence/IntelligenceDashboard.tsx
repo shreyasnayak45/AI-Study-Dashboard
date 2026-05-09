@@ -29,7 +29,7 @@ import { Card } from "@/components/ui/Card";
 import { ConsistencyRing } from "@/components/intelligence/ConsistencyRing";
 import { BurnoutCard }     from "@/components/intelligence/BurnoutCard";
 import { HourlyHeatmap }   from "@/components/intelligence/HourlyHeatmap";
-import { computeIntelligence } from "@/lib/intelligence";
+import { TIMING_UNKNOWN_PERSONALITY, computeIntelligence } from "@/lib/intelligence";
 import { fmtHours } from "@/lib/analytics-utils";
 import { getOrGenerateInsight, refreshInsight } from "@/app/actions/ai";
 import type {
@@ -108,6 +108,9 @@ export function IntelligenceDashboard({
   const aiConsistency = aiInsight?.consistencyNarrative ?? null;
   const aiWeekly      = aiInsight?.weeklyNarrative      ?? null;
   const aiRecs        = aiInsight?.recommendations      ?? null;
+  const aiPersonality = bestHours.hasEnoughTimingData
+    ? (aiInsight?.personality ?? null)
+    : TIMING_UNKNOWN_PERSONALITY;
 
   return (
     <section>
@@ -176,7 +179,7 @@ export function IntelligenceDashboard({
         />
         {/* Personality — always renders; AI text updates in place */}
         <PersonalityCard
-          ai={aiInsight?.personality ?? null}
+          ai={aiPersonality}
           fallback={intel.personality}
           peakLabel={bestHours.peakLabel}
         />
