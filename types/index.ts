@@ -166,6 +166,10 @@ export interface AIInsightContent {
   dashboard:    AIInsightDashboard;
   analytics:    AIInsightAnalytics;
   intelligence?: AIIntelligenceInsight;  // added by the intelligence analysis pass
+  /** Stored alongside content so we can detect staleness without a separate column. */
+  metadata?: {
+    sessionCount: number;  // total sessions at generation time
+  };
 }
 
 // ─── AI Intelligence (deep study-pattern analysis) ────────────────────────────

@@ -16,8 +16,8 @@ export function getGeminiFlash() {
   return genAI.getGenerativeModel({
     model: "gemini-2.5-flash",
     generationConfig: {
-      temperature:     0.35,
-      maxOutputTokens: 4096,
+      temperature:     0.2,   // lower = more consistent JSON, fewer retries
+      maxOutputTokens: 1500,  // enough for full intelligence response; reduces TTFT
     },
   });
 }

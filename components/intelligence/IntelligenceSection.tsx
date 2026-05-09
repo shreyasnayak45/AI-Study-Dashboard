@@ -56,14 +56,16 @@ interface Props {
   sessions:         RawSessionForIntelligence[];
   initialAiInsight: AIIntelligenceInsight | null;
   aiEnabled:        boolean;
+  cacheIsStale:     boolean;
 }
 
-export function IntelligenceSection({ sessions, initialAiInsight, aiEnabled }: Props) {
+export function IntelligenceSection({ sessions, initialAiInsight, aiEnabled, cacheIsStale }: Props) {
   return (
     <IntelligenceDashboard
       sessions={sessions}
       initialAiInsight={initialAiInsight}
       aiEnabled={aiEnabled}
+      cacheIsStale={cacheIsStale}
     />
   );
 }

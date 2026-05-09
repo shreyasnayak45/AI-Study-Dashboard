@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getAnalyticsStats, getRawSessions } from "@/lib/analytics-stats";
 import { generateInsights, fmtHours } from "@/lib/analytics-utils";
-import { getCachedInsight } from "@/lib/ai-insights";
+import { getCachedInsight, isCacheStale } from "@/lib/ai-insights";
 import { isAIEnabled } from "@/lib/gemini";
 import { Card } from "@/components/ui/Card";
 import { AnalyticsInsights }    from "@/components/ai/AnalyticsInsights";
@@ -62,7 +62,9 @@ export default async function AnalyticsPage() {
     getRawSessions(),
     aiEnabled ? getCachedInsight() : Promise.resolve(null),
   ]);
-  const insights = generateInsights(stats);
+  const insights      = generateInsights(stats);
+  // Server-computed: does the cached AI insight need a background refresh?
+  const cacheIsStale  = initialInsight ? isCacheStale(initialInsight, rawSessions.length) : false;
 
   const totalHours   = (stats.totalMinutes / 60).toFixed(1).replace(/\.0$/, "");
   const monthMinutes = stats.daily.reduce((s, d) => s + d.minutes, 0);
@@ -152,6 +154,7 @@ export default async function AnalyticsPage() {
               sessions={rawSessions}
               initialAiInsight={initialInsight?.content?.intelligence ?? null}
               aiEnabled={aiEnabled}
+              cacheIsStale={cacheIsStale}
             />
           </div>
 
