@@ -54,7 +54,10 @@ async function runGeneration(): Promise<InsightResult> {
   });
 
   if (!insight) {
-    return { success: false, error: "Could not generate insights. Check your GEMINI_API_KEY." };
+    // The specific cause is logged server-side via console.error in ai-insights.ts.
+    // Surface a neutral message to the client — "GEMINI_API_KEY" was misleading
+    // because the same error fired on timeouts, quota exhaustion, parse failures, etc.
+    return { success: false, error: "AI analysis unavailable right now — try again in a moment." };
   }
 
   return { success: true, insight };

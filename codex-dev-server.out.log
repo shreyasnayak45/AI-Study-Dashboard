@@ -1,0 +1,74 @@
+
+> study-dashboard@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.5 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.30.200.229:3000
+- Environments: .env.local
+✓ Ready in 1722ms
+○ Compiling middleware ...
+- Experiments (use with caution):
+  · optimizePackageImports
+
+ GET /login 200 in 3.1s (next.js: 1436ms, proxy.ts: 14ms, application-code: 1689ms)
+✓ Finished writing to filesystem cache in 14.1s
+✓ Finished filesystem cache database compaction in 18.2s
+○ Compiling / ...
+✓ Finished filesystem cache database compaction in 13.8s
+ GET / 200 in 8.9s (next.js: 3.3s, proxy.ts: 383ms, application-code: 5.3s)
+ GET / 200 in 5.2s (next.js: 15ms, proxy.ts: 645ms, application-code: 4.6s)
+ GET / 200 in 1741ms (next.js: 23ms, proxy.ts: 580ms, application-code: 1138ms)
+ GET / 200 in 1811ms (next.js: 85ms, proxy.ts: 576ms, application-code: 1150ms)
+ POST / 200 in 8.5s (next.js: 9ms, proxy.ts: 134ms, application-code: 8.4s)
+  └─ ƒ getOrGenerateInsight() in 8379ms app/actions/ai.ts
+ POST / 200 in 9.3s (next.js: 672ms, proxy.ts: 209ms, application-code: 8.4s)
+  └─ ƒ getOrGenerateInsight() in 8390ms app/actions/ai.ts
+✓ Compiled in 1174ms
+ GET / 200 in 1936ms (next.js: 769ms, proxy.ts: 600ms, application-code: 567ms)
+ GET / 200 in 1274ms (next.js: 16ms, proxy.ts: 232ms, application-code: 1027ms)
+ GET / 200 in 698ms (next.js: 17ms, proxy.ts: 396ms, application-code: 285ms)
+✓ Finished filesystem cache database compaction in 27.4s
+✓ Compiled in 941ms
+ GET / 200 in 2.3s (next.js: 1266ms, proxy.ts: 463ms, application-code: 565ms)
+ GET / 200 in 572ms (next.js: 14ms, proxy.ts: 267ms, application-code: 291ms)
+ GET / 200 in 559ms (next.js: 12ms, proxy.ts: 215ms, application-code: 332ms)
+ GET / 200 in 477ms (next.js: 10ms, proxy.ts: 175ms, application-code: 291ms)
+ GET / 200 in 546ms (next.js: 11ms, proxy.ts: 229ms, application-code: 306ms)
+ GET / 200 in 633ms (next.js: 12ms, proxy.ts: 205ms, application-code: 416ms)
+ GET / 200 in 762ms (next.js: 19ms, proxy.ts: 242ms, application-code: 501ms)
+ GET / 200 in 665ms (next.js: 17ms, proxy.ts: 204ms, application-code: 444ms)
+ GET / 200 in 535ms (next.js: 14ms, proxy.ts: 237ms, application-code: 283ms)
+ GET / 200 in 630ms (next.js: 13ms, proxy.ts: 166ms, application-code: 451ms)
+ GET / 200 in 777ms (next.js: 22ms, proxy.ts: 272ms, application-code: 483ms)
+ GET / 200 in 732ms (next.js: 17ms, proxy.ts: 231ms, application-code: 485ms)
+ GET / 200 in 3.2s (next.js: 26ms, proxy.ts: 197ms, application-code: 2.9s)
+ GET / 200 in 4.9s (next.js: 260ms, proxy.ts: 387ms, application-code: 4.3s)
+ GET / 200 in 3.8s (next.js: 228ms, proxy.ts: 338ms, application-code: 3.2s)
+ GET / 200 in 3.8s (next.js: 183ms, proxy.ts: 1155ms, application-code: 2.4s)
+ GET / 200 in 3.8s (next.js: 648ms, proxy.ts: 1236ms, application-code: 1929ms)
+ GET / 200 in 3.9s (next.js: 416ms, proxy.ts: 2.3s, application-code: 1165ms)
+ GET / 200 in 2.2s (next.js: 717ms, proxy.ts: 856ms, application-code: 619ms)
+ GET / 200 in 3.4s (next.js: 54ms, proxy.ts: 150ms, application-code: 3.2s)
+ GET / 200 in 3.5s (next.js: 544ms, proxy.ts: 232ms, application-code: 2.7s)
+ GET / 200 in 3.3s (next.js: 150ms, proxy.ts: 973ms, application-code: 2.2s)
+ GET / 200 in 3.4s (next.js: 347ms, proxy.ts: 1155ms, application-code: 1883ms)
+ GET / 200 in 3.4s (next.js: 181ms, proxy.ts: 1187ms, application-code: 2.1s)
+ GET / 200 in 3.3s (next.js: 1220ms, proxy.ts: 1057ms, application-code: 1011ms)
+✓ Finished filesystem cache database compaction in 10.2s
+✓ Finished filesystem cache database compaction in 29.4s
+✓ Finished filesystem cache database compaction in 29.4s
+ GET /settings 200 in 1760ms (next.js: 424ms, proxy.ts: 499ms, application-code: 837ms)
+ GET /login 200 in 122ms (next.js: 47ms, proxy.ts: 5ms, application-code: 70ms)
+ GET /login 200 in 156ms (next.js: 20ms, proxy.ts: 13ms, application-code: 123ms)
+ GET /login 200 in 958ms (next.js: 18ms, proxy.ts: 11ms, application-code: 929ms)
+ GET /login 200 in 259ms (next.js: 33ms, proxy.ts: 9ms, application-code: 217ms)
+✓ Compiled in 590ms
+✓ Compiled in 129ms
+✓ Compiled in 245ms
+✓ Compiled in 714ms
+✓ Compiled in 672ms
+✓ Compiled in 208ms
+✓ Compiled in 124ms
+✓ Compiled in 2.1s
+✓ Finished filesystem cache database compaction in 13.3s

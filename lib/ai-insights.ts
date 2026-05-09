@@ -21,8 +21,14 @@ import type {
 
 // ─── Tunables ────────────────────────────────────────────────────────────────
 
-/** Hard cap on Gemini wall-clock time. Cache is served if exceeded. */
-const GEMINI_TIMEOUT_MS = 12_000;
+/**
+ * Hard cap on Gemini wall-clock time.
+ * Gemini 2.5 Flash with thinking enabled regularly takes 15–30 s.
+ * 12 s was causing silent timeouts on every cold-cache visit after migration 3
+ * deleted all cached rows, making the error "Could not generate insights" appear
+ * on every page load. Raised to 30 s to give the model room to complete.
+ */
+const GEMINI_TIMEOUT_MS = 30_000;
 
 /**
  * How many net-new sessions since the last generation trigger a background
@@ -82,15 +88,22 @@ export const getCachedInsight = cache(async (): Promise<AIDailyInsight | null> =
   const hasEnoughTimingData = await userHasEnoughTimingData(user.id);
 
   if (cachedVersion < INTELLIGENCE_VERSION) {
+    console.warn(
+      `[ai-insights] getCachedInsight: cached insight version ${cachedVersion} < required ${INTELLIGENCE_VERSION} — forcing regeneration`,
+    );
     return null;
   }
 
   if (!hasEnoughTimingData) {
     const cleaned = withSafeTimingContent(insight);
-    await sb
-      .from("ai_insights")
+    // Fire-and-forget: sanitise the cached personality in the DB so it's correct
+    // on the next cold read. Not awaited — never block the response for a write.
+    sb.from("ai_insights")
       .update({ content: cleaned.content })
-      .eq("id", cleaned.id);
+      .eq("id", cleaned.id)
+      .then(({ error }) => {
+        if (error) console.error("[ai-insights] Failed to sanitise cached insight timing content:", error);
+      });
     return cleaned;
   }
 
@@ -112,8 +125,11 @@ export async function generateAndStoreInsight(ctx: InsightContext): Promise<AIDa
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const content = await withTimeout(callGemini(ctx), GEMINI_TIMEOUT_MS);
-  if (!content) return null;
+  const content = await withTimeout(callGemini(ctx), GEMINI_TIMEOUT_MS, "callGemini");
+  if (!content) {
+    console.error(`[ai-insights] generateAndStoreInsight: callGemini returned null (timeout=${GEMINI_TIMEOUT_MS}ms or internal error)`);
+    return null;
+  }
 
   const sb = await createClient();
   const { data, error } = await sb
@@ -130,18 +146,28 @@ export async function generateAndStoreInsight(ctx: InsightContext): Promise<AIDa
     .select()
     .single();
 
-  if (error) return null;
+  if (error) {
+    console.error("[ai-insights] Supabase upsert failed:", error);
+    return null;
+  }
   return data as AIDailyInsight;
 }
 
 // ─── Timeout wrapper ──────────────────────────────────────────────────────────
 
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+function withTimeout<T>(promise: Promise<T>, ms: number, label = "operation"): Promise<T | null> {
   return new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(null), ms);
+    const timer = setTimeout(() => {
+      console.error(`[ai-insights] ${label} timed out after ${ms}ms`);
+      resolve(null);
+    }, ms);
     promise.then(
       (v) => { clearTimeout(timer); resolve(v); },
-      ()  => { clearTimeout(timer); resolve(null); },
+      (err) => {
+        clearTimeout(timer);
+        console.error(`[ai-insights] ${label} rejected:`, err);
+        resolve(null);
+      },
     );
   });
 }
@@ -272,18 +298,34 @@ subjects:${topSubjects} tasks:${taskLine}${globalTimingInstruction}${intelligenc
 Use specific numbers. Warm coach tone. No exclamation marks.`;
 
   let model;
-  try { model = getGeminiFlash(); } catch { return null; }
+  try {
+    model = getGeminiFlash();
+  } catch (err) {
+    console.error("[ai-insights] getGeminiFlash() threw — API key likely missing:", err);
+    return null;
+  }
 
   let result;
-  try { result = await model.generateContent(prompt); } catch { return null; }
+  try {
+    result = await model.generateContent(prompt);
+  } catch (err) {
+    console.error("[ai-insights] model.generateContent() threw — network/quota error:", err);
+    return null;
+  }
 
   let text: string;
   try {
     const candidate = result.response.candidates?.[0];
-    if (!candidate) return null;
+    if (!candidate) {
+      console.error("[ai-insights] No candidates in Gemini response:", JSON.stringify(result.response));
+      return null;
+    }
 
     const finishReason = candidate.finishReason;
-    if (finishReason && finishReason !== "STOP" && finishReason !== "MAX_TOKENS") return null;
+    if (finishReason && finishReason !== "STOP" && finishReason !== "MAX_TOKENS") {
+      console.error("[ai-insights] Unexpected finishReason:", finishReason);
+      return null;
+    }
 
     // Filter thinking parts (gemini-2.5-flash internal reasoning tokens)
     text = (candidate.content?.parts ?? [])
@@ -291,20 +333,33 @@ Use specific numbers. Warm coach tone. No exclamation marks.`;
       .map((p)  => ("text" in p ? (p as { text: string }).text : ""))
       .join("");
 
-    if (!text) return null;
-  } catch { return null; }
+    if (!text) {
+      console.error("[ai-insights] Gemini returned empty text after filtering thought parts");
+      return null;
+    }
+  } catch (err) {
+    console.error("[ai-insights] Error reading Gemini response:", err);
+    return null;
+  }
 
   // Layer 3 (mandatory server-side override): parseResponse receives hasTimingData
   // (hoisted above). sanitiseIntelligence forces TIMING_UNKNOWN_PERSONALITY when
   // false, regardless of what Gemini returned.
   const parsed = parseResponse(text, hasTimingData);
-  if (!parsed) return null;
+  if (!parsed) {
+    console.error("[ai-insights] parseResponse() returned null — Gemini output failed validation. Raw text (first 500 chars):", text.slice(0, 500));
+    return null;
+  }
 
   const content = hasTimingData ? parsed : sanitiseTimingLanguage(parsed);
 
   // Attach staleness metadata so isCacheStale() can work on the next visit
   content.metadata = { sessionCount, intelligence_version: INTELLIGENCE_VERSION };
   return content;
+}
+
+export async function __debugGenerateInsightContent(ctx: InsightContext): Promise<AIInsightContent | null> {
+  return callGemini(ctx);
 }
 
 async function userHasEnoughTimingData(userId: string): Promise<boolean> {
