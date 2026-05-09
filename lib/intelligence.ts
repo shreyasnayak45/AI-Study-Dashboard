@@ -29,7 +29,7 @@ import type {
  * Below this threshold:
  *   - Heatmap shows "Still learning your focus windows"
  *   - Personality is "Just Getting Started" (no time-based archetypes)
- *   - Burnout late-night signal is skipped
+ *   - Burnout time-of-day signals are skipped
  *   - Gemini receives an explicit "no timing data" instruction
  *
  * Exported so ai-insights.ts uses the same value.
@@ -37,13 +37,13 @@ import type {
 export const MIN_TIMED_SESSIONS = 5;
 
 /** Bump whenever cached AI intelligence shape/safety semantics change. */
-export const INTELLIGENCE_VERSION = 2;
+export const INTELLIGENCE_VERSION = 3;
 
 export const TIMING_UNKNOWN_PERSONALITY: AIIntelligenceInsight["personality"] = {
   type:    "Focus Patterns Unknown",
   emoji:   "🕐",
-  tagline: "Learning Your Study Rhythm",
-  insight: "Use the live timer during study sessions to unlock personalized focus insights and timing analysis.",
+  tagline: "Learning Your Study Pattern",
+  insight: "Use the live timer during study sessions to unlock personalized focus insights.",
 };
 
 export function hasRealSessionStartTime(s: RawSessionForIntelligence): boolean {
@@ -122,12 +122,12 @@ export function computeIntelligence(
     },
   };
 
-  // ── Burnout Risk ─────────────────────────────────────────────────────────
-  const burnout = computeBurnoutRisk(recent7, recent14, cutoff7);
-
   // ── Best Study Hours ─────────────────────────────────────────────────────
   // Uses session_start_time exclusively — never studied_at.
   const bestHours = computeBestStudyHours(sessions);
+
+  // ── Burnout Risk ─────────────────────────────────────────────────────────
+  const burnout = computeBurnoutRisk(recent7, recent14, cutoff7, bestHours.hasEnoughTimingData);
 
   // ── Focus Personality ────────────────────────────────────────────────────
   const personality = computePersonality(sessions, bestHours);
@@ -169,6 +169,7 @@ function computeBurnoutRisk(
   recent7:  RawSessionForIntelligence[],
   recent14: RawSessionForIntelligence[],
   cutoff7:  Date,
+  hasEnoughTimingData: boolean,
 ): BurnoutRisk {
   const signals: BurnoutSignal[] = [];
 
@@ -182,7 +183,7 @@ function computeBurnoutRisk(
 
   // 2. Late-night study (hour ≥ 22) in the last 7 days.
   //    ONLY use session_start_time — studied_at is noon for manual sessions.
-  const timedRecent7 = recent7.filter(hasRealSessionStartTime);
+  const timedRecent7 = hasEnoughTimingData ? recent7.filter(hasRealSessionStartTime) : [];
   if (timedRecent7.some((s) => new Date(s.session_start_time!).getHours() >= 22)) {
     signals.push({
       label: "Late-night sessions",

@@ -81,12 +81,12 @@ export const getCachedInsight = cache(async (): Promise<AIDailyInsight | null> =
   const cachedVersion = insight.content.metadata?.intelligence_version ?? 0;
   const hasEnoughTimingData = await userHasEnoughTimingData(user.id);
 
-  if (cachedVersion < INTELLIGENCE_VERSION && hasEnoughTimingData) {
+  if (cachedVersion < INTELLIGENCE_VERSION) {
     return null;
   }
 
-  if (!hasEnoughTimingData || cachedVersion < INTELLIGENCE_VERSION) {
-    const cleaned = withSafeTimingPersonality(insight);
+  if (!hasEnoughTimingData) {
+    const cleaned = withSafeTimingContent(insight);
     await sb
       .from("ai_insights")
       .update({ content: cleaned.content })
@@ -230,7 +230,8 @@ phase:${phase}`;
 NO TIMING DATA (${facts.timedSessionCount}/${MIN_TIMED_SESSIONS} timed sessions):
   DO NOT output a "personality" field at all — it will be injected by the server.
   DO NOT mention morning / afternoon / evening / night in ANY field.
-  DO NOT reference time-of-day in recommendations.`;
+  DO NOT mention peak focus hours, focus windows, or timing-based study behavior.
+  DO NOT reference time-of-day in dashboard, analytics, intelligence, or recommendations.`;
 
     if (phase === 1) {
       intelligenceBlock += timingInstruction + `
@@ -256,10 +257,15 @@ PHASE 2: hedged language — "tends to", "appears to", "early patterns suggest".
   // ── Concise prompt ──────────────────────────────────────────────────────────
   // ~150 words vs the old ~530-word prompt — Gemini 2.5 Flash doesn't need
   // verbose instructions to produce high-quality structured output.
+  const globalTimingInstruction = hasTimingData
+    ? ""
+    : `
+No reliable session_start_time data. In every output field, avoid all time-of-day claims, including morning, afternoon, evening, night, peak focus hours, focus windows, and timing-based study behavior. Use neutral progress wording such as "Strong Start to Your Study Journey".`;
+
   const prompt = `Study coach AI. Return ONLY valid JSON — no markdown, no extra text.
 
 today:${todayStr} week:${weekH}h streak:${trackerStats.streak}d total:${profileStats.totalSessions}sess/${totalH}h
-subjects:${topSubjects} tasks:${taskLine}${intelligenceBlock}
+subjects:${topSubjects} tasks:${taskLine}${globalTimingInstruction}${intelligenceBlock}
 
 {"dashboard":{"headline":"3-5 word state","insights":["insight 1","insight 2","insight 3"]},"analytics":{"summary":"1-sentence overview","observations":["obs 1","obs 2","obs 3","obs 4"]}${intelligenceSchema}}
 
@@ -294,9 +300,11 @@ Use specific numbers. Warm coach tone. No exclamation marks.`;
   const parsed = parseResponse(text, hasTimingData);
   if (!parsed) return null;
 
+  const content = hasTimingData ? parsed : sanitiseTimingLanguage(parsed);
+
   // Attach staleness metadata so isCacheStale() can work on the next visit
-  parsed.metadata = { sessionCount, intelligence_version: INTELLIGENCE_VERSION };
-  return parsed;
+  content.metadata = { sessionCount, intelligence_version: INTELLIGENCE_VERSION };
+  return content;
 }
 
 async function userHasEnoughTimingData(userId: string): Promise<boolean> {
@@ -318,9 +326,9 @@ async function userHasEnoughTimingData(userId: string): Promise<boolean> {
   return timedCount >= MIN_TIMED_SESSIONS;
 }
 
-function withSafeTimingPersonality(insight: AIDailyInsight): AIDailyInsight {
+function withSafeTimingContent(insight: AIDailyInsight): AIDailyInsight {
   const content: AIInsightContent = {
-    ...insight.content,
+    ...sanitiseTimingLanguage(insight.content),
     metadata: {
       ...(insight.content.metadata ?? {}),
       intelligence_version: INTELLIGENCE_VERSION,
@@ -335,6 +343,104 @@ function withSafeTimingPersonality(insight: AIDailyInsight): AIDailyInsight {
   }
 
   return { ...insight, content };
+}
+
+const TIMING_LANGUAGE_RE =
+  /\b(?:afternoons?|mornings?|evenings?|nights?|nighttime|late-night|early-morning|midday|midnight|dawn|pre-dawn|peak\s+focus\s+hours?|peak\s+hours?|focus\s+windows?|time-of-day|timing-based|timing\s+patterns?|timing\s+analysis|study\s+rhythm)\b|\b\d{1,2}(?::\d{2})?\s?(?:am|pm)\b/i;
+
+function sanitiseTimingLanguage(content: AIInsightContent): AIInsightContent {
+  return {
+    ...content,
+    dashboard: {
+      headline: sanitiseHeadline(content.dashboard.headline),
+      insights: content.dashboard.insights
+        .slice(0, 4)
+        .map((text) => sanitiseNarrativeText(
+          text,
+          "Your study journey is building momentum from the sessions you've logged.",
+        )),
+    },
+    analytics: {
+      summary: sanitiseNarrativeText(
+        content.analytics.summary,
+        "Your study journey is building momentum from the sessions you've logged.",
+      ),
+      observations: content.analytics.observations
+        .slice(0, 5)
+        .map((text) => sanitiseNarrativeText(
+          text,
+          "Your logged sessions show steady progress while the dataset is still maturing.",
+        )),
+    },
+    intelligence: content.intelligence ? sanitiseIntelligenceTimingLanguage(content.intelligence) : undefined,
+  };
+}
+
+function sanitiseIntelligenceTimingLanguage(
+  intelligence: AIIntelligenceInsight,
+): AIIntelligenceInsight {
+  return {
+    ...intelligence,
+    consistencyNarrative: {
+      label: sanitiseShortLabel(intelligence.consistencyNarrative.label, "Steady Progress"),
+      tagline: sanitiseNarrativeText(
+        intelligence.consistencyNarrative.tagline,
+        "Your logged sessions are starting to show a clearer consistency pattern.",
+      ),
+    },
+    burnoutAnalysis: {
+      ...intelligence.burnoutAnalysis,
+      headline: sanitiseShortLabel(intelligence.burnoutAnalysis.headline, "Still Learning"),
+      insight: sanitiseNarrativeText(
+        intelligence.burnoutAnalysis.insight,
+        "This analysis focuses on duration and consistency while the dataset is still maturing.",
+      ),
+      signals: intelligence.burnoutAnalysis.signals
+        .filter((signal) => !hasTimingLanguage(signal))
+        .slice(0, 5),
+    },
+    personality: { ...TIMING_UNKNOWN_PERSONALITY },
+    weeklyNarrative: sanitiseNarrativeText(
+      intelligence.weeklyNarrative,
+      "Your weekly progress is best described through total time and consistency for now.",
+    ),
+    recommendations: intelligence.recommendations
+      .map((rec) => ({
+        emoji: rec.emoji,
+        title: sanitiseShortLabel(rec.title, "Keep Building"),
+        detail: sanitiseNarrativeText(
+          rec.detail,
+          "Keep logging sessions so future insights can become more personalized.",
+        ),
+      }))
+      .slice(0, 5),
+    motivationalMessage: sanitiseNarrativeText(
+      intelligence.motivationalMessage,
+      "Strong work logging your study sessions. Keep building the habit one session at a time.",
+    ),
+  };
+}
+
+function sanitiseHeadline(text: string): string {
+  return hasTimingLanguage(text) ? "Strong Start to Your Study Journey" : text;
+}
+
+function sanitiseShortLabel(text: string, fallback: string): string {
+  return hasTimingLanguage(text) ? fallback : text;
+}
+
+function sanitiseNarrativeText(text: string, fallback: string): string {
+  if (!hasTimingLanguage(text)) return text;
+
+  const safeSentences = (text.match(/[^.!?]+[.!?]?/g) ?? [text])
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence.length > 0 && !hasTimingLanguage(sentence));
+
+  return safeSentences.join(" ").trim() || fallback;
+}
+
+function hasTimingLanguage(text: string): boolean {
+  return TIMING_LANGUAGE_RE.test(text);
 }
 
 // ─── Server-side intelligence facts ──────────────────────────────────────────
@@ -372,6 +478,11 @@ function computeIntelligenceFacts(sessions: RawSessionForIntelligence[]) {
   const recentScore   = Math.min(15, (recent7.length / 5) * 15);
   const score         = Math.max(0, Math.min(100, Math.round(frequencyScore + streakScore + regularityScore + recentScore)));
 
+  // Hour buckets — ONLY sessions with real session_start_time
+  const timedSessions      = sessions.filter(hasRealSessionStartTime);
+  const timedSessionCount  = timedSessions.length;
+  const hasTimingData      = timedSessionCount >= MIN_TIMED_SESSIONS;
+
   // Burnout signals
   const prev7        = recent14.filter((s) => new Date(s.studied_at) < new Date(now.getTime() - MS_7D));
   const thisWeekMins = recent7.reduce((a, s) => a + s.duration_minutes, 0);
@@ -383,7 +494,7 @@ function computeIntelligenceFacts(sessions: RawSessionForIntelligence[]) {
   for (const s of recent7) { const k = s.studied_at.split("T")[0]; dayMap7.set(k, (dayMap7.get(k) ?? 0) + s.duration_minutes); }
 
   // Late-night: ONLY from session_start_time — never studied_at
-  const timedRecent7 = recent7.filter(hasRealSessionStartTime);
+  const timedRecent7 = hasTimingData ? recent7.filter(hasRealSessionStartTime) : [];
   const burnoutSignals = {
     hasLongSession:   recent7.some((s) => s.duration_minutes > 180),
     hasLateNight:     timedRecent7.some((s) => new Date(s.session_start_time!).getUTCHours() >= 22),
@@ -391,11 +502,6 @@ function computeIntelligenceFacts(sessions: RawSessionForIntelligence[]) {
     hasErratic:       durations14.length >= 4 && cv14 > 0.9,
     hasOverloadedDay: Array.from(dayMap7.values()).some((m) => m > 360),
   };
-
-  // Hour buckets — ONLY sessions with real session_start_time
-  const timedSessions      = sessions.filter(hasRealSessionStartTime);
-  const timedSessionCount  = timedSessions.length;
-  const hasTimingData      = timedSessionCount >= MIN_TIMED_SESSIONS;
 
   const ht = new Array<number>(24).fill(0);
   if (hasTimingData) {
