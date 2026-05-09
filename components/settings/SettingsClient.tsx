@@ -22,7 +22,6 @@ import {
   clearAllSessions, exportStudyData,
 } from "@/app/actions/settings";
 import { AuthConnectionsSection } from "@/components/settings/AuthConnectionsSection";
-import { EmailTestSection } from "@/components/settings/EmailTestSection";
 import { fmtHours } from "@/lib/analytics-utils";
 import { cn } from "@/lib/utils";
 import type { User as UserType, UserProfile, UserSettings } from "@/types";
@@ -327,9 +326,6 @@ export function SettingsClient({ user, profile, settings }: Props) {
 
         {/* ── Password Login + Connected Accounts ─────────────────── */}
         <AuthConnectionsSection user={user} />
-
-        {/* ── Developer Tools (temporary — remove after weekly reports ship) ── */}
-        <EmailTestSection />
 
         {/* ── Danger zone ─────────────────────────────────────────── */}
         <section>
