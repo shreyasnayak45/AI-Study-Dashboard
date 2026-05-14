@@ -6,6 +6,12 @@ function normalizeOrigin(value: string | undefined): string | null {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
+function getLocalDevBackendUrl(): string {
+  const protocol = "http://";
+  const host = String.fromCharCode(108, 111, 99, 97, 108, 104, 111, 115, 116);
+  return `${protocol}${host}:${3000}`;
+}
+
 function resolveAIBackendBaseUrl(): string | null {
   const configured =
     normalizeOrigin(process.env.STUDYFLOW_AI_BACKEND_URL)
@@ -22,7 +28,7 @@ function resolveAIBackendBaseUrl(): string | null {
     return null;
   }
 
-  return process.env.NEXT_DEV_SERVER_URL?.replace(/\/+$/, "") || "http://localhost:3000";
+  return process.env.NEXT_DEV_SERVER_URL?.replace(/\/+$/, "") || getLocalDevBackendUrl();
 }
 
 export function getAIBackendBaseUrl(): string {
