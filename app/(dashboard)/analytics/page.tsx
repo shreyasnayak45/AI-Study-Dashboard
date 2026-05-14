@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { getAnalyticsStats, getRawSessions } from "@/lib/analytics-stats";
 import { generateInsights, fmtHours } from "@/lib/analytics-utils";
 import { getCachedInsight, isCacheStale } from "@/lib/ai-insights";
-import { isAIEnabled } from "@/lib/gemini";
+import { isAIBackendEnabled } from "@/lib/ai-backend";
 import { Card } from "@/components/ui/Card";
 import { AnalyticsInsights }    from "@/components/ai/AnalyticsInsights";
 import { IntelligenceSection } from "@/components/intelligence/IntelligenceSection";
@@ -52,7 +52,7 @@ function AIInsightsSkeleton() {
 }
 
 export default async function AnalyticsPage() {
-  const aiEnabled = isAIEnabled();
+  const aiEnabled = isAIBackendEnabled();
 
   // Fetch stats, sessions, and today's AI insight in parallel.
   // getCachedInsight is React.cache'd — the AIAnalyticsSection Suspense below
@@ -60,7 +60,7 @@ export default async function AnalyticsPage() {
   const [stats, rawSessions, initialInsight] = await Promise.all([
     getAnalyticsStats(),
     getRawSessions(),
-    aiEnabled ? getCachedInsight() : Promise.resolve(null),
+    getCachedInsight(),
   ]);
   const insights      = generateInsights(stats);
   // Server-computed: does the cached AI insight need a background refresh?
@@ -164,13 +164,11 @@ export default async function AnalyticsPage() {
           )}
 
           {/* ── AI Analysis — streams in independently via Suspense ───── */}
-          {aiEnabled && (
-            <div className="mt-8">
-              <Suspense fallback={<AIInsightsSkeleton />}>
-                <AIAnalyticsSection />
-              </Suspense>
-            </div>
-          )}
+          <div className="mt-8">
+            <Suspense fallback={<AIInsightsSkeleton />}>
+              <AIAnalyticsSection />
+            </Suspense>
+          </div>
         </>
       )}
     </div>

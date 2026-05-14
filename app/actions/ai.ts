@@ -1,13 +1,13 @@
 "use server";
 
 import { getCurrentUser } from "@/lib/auth";
-import { getCachedInsight, generateAndStoreInsight } from "@/lib/ai-insights";
-import { getTrackerStats } from "@/lib/tracker-stats";
-import { getTaskStats } from "@/lib/task-stats";
-import { getProfileStats, getRawSessions } from "@/lib/analytics-stats";
+import { getAIInsightsEndpoint } from "@/lib/ai-backend";
+import { getCachedInsight } from "@/lib/ai-insights";
+import { createClient } from "@/lib/supabase/server";
 import type { ActionResult, AIDailyInsight } from "@/types";
 
 type InsightResult = ActionResult & { insight?: AIDailyInsight };
+type AIInsightsApiResult = InsightResult;
 
 /**
  * Returns today's cached insight if it exists, otherwise generates a new one.
@@ -34,31 +34,38 @@ export async function refreshInsight(): Promise<InsightResult> {
   return runGeneration();
 }
 
-// ─── Shared generation logic ──────────────────────────────────────────────────
-
 async function runGeneration(): Promise<InsightResult> {
-  // All calls use React.cache — no redundant DB queries within this action.
-  // rawSessions gives Gemini the full session history for intelligence analysis.
-  const [trackerStats, taskStats, profileStats, rawSessions] = await Promise.all([
-    getTrackerStats(),
-    getTaskStats(),
-    getProfileStats(),
-    getRawSessions(),
-  ]);
+  const sb = await createClient();
+  const { data: { session } } = await sb.auth.getSession();
 
-  const insight = await generateAndStoreInsight({
-    trackerStats,
-    taskStats,
-    profileStats,
-    rawSessions,
-  });
-
-  if (!insight) {
-    // The specific cause is logged server-side via console.error in ai-insights.ts.
-    // Surface a neutral message to the client — "GEMINI_API_KEY" was misleading
-    // because the same error fired on timeouts, quota exhaustion, parse failures, etc.
-    return { success: false, error: "AI analysis unavailable right now — try again in a moment." };
+  if (!session?.access_token) {
+    return { success: false, error: "Not authenticated" };
   }
 
-  return { success: true, insight };
+  try {
+    const response = await fetch(getAIInsightsEndpoint(), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    const result = await response.json().catch(() => null) as AIInsightsApiResult | null;
+    if (!response.ok || !result?.success || !result.insight) {
+      return {
+        success: false,
+        error: result?.error || "AI analysis unavailable right now. Please try again in a moment.",
+      };
+    }
+
+    return { success: true, insight: result.insight };
+  } catch (error) {
+    console.error("[ai-action] Secure AI insight request failed:", error);
+    return {
+      success: false,
+      error: "AI analysis unavailable right now. Please try again in a moment.",
+    };
+  }
 }

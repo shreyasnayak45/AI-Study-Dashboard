@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { __debugGenerateInsightContent } from "@/lib/ai-insights";
 
 export async function GET() {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+  }
+
   try {
     const now = new Date();
     const iso = (daysAgo: number) => {

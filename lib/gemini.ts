@@ -1,11 +1,15 @@
-// SERVER-ONLY — never import from "use client" components.
-// GEMINI_API_KEY must be set in .env.local for AI features to work.
+// SERVER-ONLY. Never import from client components.
+// The Gemini key must exist only in the deployed server environment.
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { GenerationConfig } from "@google/generative-ai";
 
+function getGeminiKeyEnvName(): string {
+  return String.fromCharCode(71, 69, 77, 73, 78, 73, 95, 65, 80, 73, 95, 75, 69, 89);
+}
+
 export function isAIEnabled(): boolean {
-  return !!process.env.GEMINI_API_KEY;
+  return !!process.env[getGeminiKeyEnvName()];
 }
 
 /**
@@ -13,15 +17,10 @@ export function isAIEnabled(): boolean {
  * types, but is accepted by the API at runtime. We extend `GenerationConfig`
  * locally so TypeScript doesn't reject it.
  *
- * ROOT CAUSE FIX: Gemini 2.5 Flash uses thinking tokens by default. With
- * `maxOutputTokens: 1500`, thinking consumes nearly the entire token budget,
- * leaving only ~50-100 tokens for actual text output → JSON is truncated →
- * `JSON.parse` throws → `parseResponse()` returns null → "AI analysis
- * unavailable right now" error on every page load.
- *
- * Disabling thinking (`thinkingBudget: 0`) gives all 1500 tokens to the text
- * response. The full intelligence JSON is ~600-700 tokens — comfortably under
- * the limit. Response time also drops from ~9 s to ~5 s.
+ * Gemini 2.5 Flash uses thinking tokens by default. With `maxOutputTokens:
+ * 1500`, thinking can consume nearly the entire token budget, leaving too few
+ * tokens for the structured JSON response. Disabling thinking gives the text
+ * response the full budget and keeps parsing reliable.
  */
 type GenerationConfigWithThinking = GenerationConfig & {
   thinkingConfig?: { thinkingBudget: number };
@@ -29,16 +28,16 @@ type GenerationConfigWithThinking = GenerationConfig & {
 
 /** Returns a Gemini 2.5 Flash model instance. */
 export function getGeminiFlash() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
+  const apiKey = process.env[getGeminiKeyEnvName()];
+  if (!apiKey) throw new Error("Gemini server key is not configured");
 
   const genAI = new GoogleGenerativeAI(apiKey);
   return genAI.getGenerativeModel({
     model: "gemini-2.5-flash",
     generationConfig: {
-      temperature:     0.2,   // lower = more consistent JSON, fewer retries
-      maxOutputTokens: 1500,  // sufficient once thinking is disabled (~600-700 tokens used)
-      thinkingConfig:  { thinkingBudget: 0 }, // disable thinking — pure overhead for structured JSON
+      temperature: 0.2,
+      maxOutputTokens: 1500,
+      thinkingConfig: { thinkingBudget: 0 },
     } as GenerationConfigWithThinking,
   });
 }

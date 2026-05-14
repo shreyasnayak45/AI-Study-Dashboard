@@ -2,6 +2,7 @@
 // Do NOT import from any "use client" component.
 
 import { cache } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getGeminiFlash, isAIEnabled } from "@/lib/gemini";
@@ -68,8 +69,6 @@ export function isCacheStale(
 // ─── DB read ──────────────────────────────────────────────────────────────────
 
 export const getCachedInsight = cache(async (): Promise<AIDailyInsight | null> => {
-  if (!isAIEnabled()) return null;
-
   const user = await getCurrentUser();
   if (!user) return null;
 
@@ -112,7 +111,7 @@ export const getCachedInsight = cache(async (): Promise<AIDailyInsight | null> =
 
 // ─── Generation ───────────────────────────────────────────────────────────────
 
-interface InsightContext {
+export interface InsightContext {
   trackerStats: TrackerStats;
   taskStats:    TaskStats;
   profileStats: ProfileStats;
@@ -120,23 +119,31 @@ interface InsightContext {
 }
 
 export async function generateAndStoreInsight(ctx: InsightContext): Promise<AIDailyInsight | null> {
-  if (!isAIEnabled()) return null;
-
   const user = await getCurrentUser();
   if (!user) return null;
 
+  const sb = await createClient();
+  return generateAndStoreInsightForUser(ctx, user.id, sb as SupabaseClient);
+}
+
+export async function generateAndStoreInsightForUser(
+  ctx: InsightContext,
+  userId: string,
+  sb: SupabaseClient,
+): Promise<AIDailyInsight | null> {
+  if (!isAIEnabled()) return null;
+
   const content = await withTimeout(callGemini(ctx), GEMINI_TIMEOUT_MS, "callGemini");
   if (!content) {
-    console.error(`[ai-insights] generateAndStoreInsight: callGemini returned null (timeout=${GEMINI_TIMEOUT_MS}ms or internal error)`);
+    console.error(`[ai-insights] generateAndStoreInsightForUser: callGemini returned null (timeout=${GEMINI_TIMEOUT_MS}ms or internal error)`);
     return null;
   }
 
-  const sb = await createClient();
   const { data, error } = await sb
     .from("ai_insights")
     .upsert(
       {
-        user_id:      user.id,
+        user_id:      userId,
         insight_date: todayDateStr(),
         content,
         generated_at: new Date().toISOString(),
